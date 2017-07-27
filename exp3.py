@@ -18,23 +18,13 @@ def get_video():
 
 # function to get depth image from kinect
 def get_depth(value):
-    depth, _ = freenect.sync_get_depth()
-    rgbframes, _ = freenect.sync_get_video()
-    rgbframes = cv2.cvtColor(rgbframes, cv2.COLOR_RGB2BGR)
-    #print(depth)
-    # print (depth.shape) #(480,640)
-    # np.clip(array, 0, 2**10 - 1, array)
-    # array >>= 2
-    # center_pixel_depth = depth[width/2, height/2]
-    # depth_mask = np.where(depth == center_pixel_depth, 255,     0).astype(np.uint8)
-    depth_mask = np.where(depth < 650, 255, 0).astype(np.uint8)
-    # ret,thresh1 = cv2.threshold(depth_mask,70,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
-    #tp,contours, hierarchy = cv2.findContours(thresh1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    #drawing = depth_mask.copy()
-    thresh1=depth_mask.copy()
-    # _, thresh1 = cv2.threshold(depth_mask, 127, 255,cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-    image, contours, hierarchy = cv2.findContours(thresh1.copy(),cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-    cnt = max(contours, key=lambda x: cv2.contourArea(x))
+    depth, _ = freenect.sync_get_depth() #depth is a numpy array which stores the depth value of each pixel captured
+    rgbframes, _ = freenect.sync_get_video() #rgbframes is a numpy array which stores rgb value of each pixel captured
+    rgbframes = cv2.cvtColor(rgbframes, cv2.COLOR_RGB2BGR) #we convert rgb format to bgr color space. We did this because OpenCV works with bgr formats for historical reasons (no technicalities involved)
+    depth_mask = np.where(depth < 650, 255, 0).astype(np.uint8) # wherever the depth value<650 in the np array named depth, change that value to 255(rgb of white) and wherever the depth value is more then at those places substitute the value with 0(rgb of black). astype(np.uint8)is just to ensure all pixel values are from 0 to 255. This new np array is called depth_mask. So depth mask is an array with white colour at all places with depth<650 and black color everywhere else.
+    thresh1=depth_mask.copy() # we create a copy of the depth_mask array and store it in thresh1 for computations further
+    image, contours, hierarchy = cv2.findContours(thresh1.copy(),cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)# findContours function of the openCV finds the contours on our depth map. Note that our depth map has no background. It is just plain black and white. white for the pixel which are closer than 650 depth to the camera.
+    cnt = max(contours, key=lambda x: cv2.contourArea(x)) 
     x, y, w, h = cv2.boundingRect(cnt)
     rec_tuple=(x,y,x+w,y+h)
     #print (rec_tuple)
@@ -63,7 +53,6 @@ def get_depth(value):
             count_defects += 1
             cv2.circle(thresh1, far, 1, [127, 127, 127], -1)
             cv2.circle(rgbframes, far, 1, [255, 0, 0], -1)
-
         # dist = cv2.pointPolygonTest(cnt,far,True)
         cv2.line(thresh1, start, end, [255, 255, 255], 2)
         cv2.line(rgbframes, start, end, [0, 0, 255], 2)
@@ -103,7 +92,7 @@ if __name__ == "__main__":
                 j+=1
             value=maxind
             if value==0:
-               # playsound.playsound("hi.mp3")
+            #playsound.playsound("hi.mp3")
                pass
             if value==1:
                 p = vlc.MediaPlayer("/home/digvijay/Documents/howAreYou.mp3")
